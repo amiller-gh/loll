@@ -4,35 +4,15 @@ var fs = require('fs');
 var path = require('path');
 var colour = require('colour');
 
-var apiDir = path.dirname(require.main.filename) + "/api";
+var rootDir = path.dirname(require.main.filename);
+var apiDir = rootDir + "/api";
 var router;
 
-function beforeApiHook(router){
-  try {
-    var hooks = require(apiDir + '/.hooks.js');
-    if(typeof hooks.BEFORE === 'function'){
-      router.use(hooks.BEFORE);
-      return console.log('   ✔ Before API hook registered'.green.bold);
-    }
-    console.log('   • No before hook found'.yellow);
-  } catch(err){ console.log('   • No before hook found'.yellow)}
-}
-
-function afterApiHook(router){
-  try {
-    var hooks = require(apiDir + '/.hooks.js');
-    if(typeof hooks.AFTER === 'function'){
-      router.use(hooks.AFTER);
-      return console.log('   ✔ After API hook registered'.green.bold);
-    }
-    console.log('   • No after hook found'.yellow);
-  } catch(err){ console.log('   • No after hook found'.yellow)}
-}
-
+// If this is not an ajax request, and request is for an asset that accepts html,
+// then this must be a first time render - just send our base page down.
 function renderBasePage(req, res, next){
-  // If this is not an ajax request, just send our base page
-  if(typeof req === 'object' && !req.xhr){
-    return res.sendfile(path.dirname(require.main.filename) + '/index.html', {}, function (err) {
+  if(typeof req === 'object' && !req.xhr && req.accepts(['*/*', 'text/html']) === 'text/html'){
+    return res.sendfile(rootDir + '/index.html', {}, function (err) {
       if (err) res.status((err) ? err.status : 500);
       else res.status(200);
     });
@@ -40,9 +20,16 @@ function renderBasePage(req, res, next){
    next();
 }
 
-function apiNotFound(req, res){
-  console.error('✘ Error routing to API path '.red, req.path.red);
-  return {code: 404, status: 'error', message: 'Method Not Implemented'};
+// If no API endpoint takes the bait, return the properly formatted 400 error
+// for the media requested. JSON for ajax, just the http status code for all others
+function apiNotFound(req, res, next){
+  if(typeof req !== 'object') return;
+  res.status(400);
+  if(req.xhr){
+    console.error('✘ Error routing to API path '.red, req.path.red);
+    res.json({code: 404, status: 'error', message: 'Method Not Implemented'});
+  }
+  next();
 }
 
 function attachLocalApi(req, res, next){
@@ -62,6 +49,7 @@ function attachLocalApi(req, res, next){
   };
   next();
 }
+attachLocalApi.next = function(){console.log('BLARG?!')}
 
 var evalAPI = function(func){
   return function(req, res, next){
@@ -92,6 +80,15 @@ var evalAPI = function(func){
   }
  };
 
+function hasValidMethod(handler){
+  return typeof handler === 'object' &&
+     (  typeof handler.ALL === 'function'
+        || typeof handler.GET === 'function'
+        || typeof handler.POST === 'function'
+        || typeof handler.PUT === 'function'
+        || typeof handler.DELETE === 'function')
+}
+
 function loadAPI(router, filePath, apiPath){
   var methods = '';
   try {
@@ -99,13 +96,7 @@ function loadAPI(router, filePath, apiPath){
      // If handler is a function, register it as a get callback
      if(typeof handler === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler));
      // If handler is an object with any valid http method, register them
-     else if(typeof handler === 'object' &&
-           (  typeof handler.ALL === 'function'
-           || typeof handler.GET === 'function'
-           || typeof handler.POST === 'function'
-           || typeof handler.PUT === 'function'
-           || typeof handler.DELETE === 'function' )
-      ){
+     else if(hasValidMethod(handler)){
        if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler.ALL));
        if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler.GET));
        if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler.POST));
@@ -158,7 +149,7 @@ function discoverAPI(router){
             }
 
             // When we have loaded all of our API endpoints, register our catchall route
-            router.all('*', evalAPI(apiNotFound));
+            router.all('*', apiNotFound);
           }
         }
       };
@@ -174,16 +165,21 @@ function discoverAPI(router){
 // And adds a middleware that attaches a new instance of the api query function
 // to each request's locals object.
 api = function(express){
-  var setupRouter = express.Router();
+  var setupRouter = express();
   router = express.Router();
+
+  // Hacky. Force the parent router to attach the locals.api interface at the begining of each request
+  setupRouter.on('mount', function(parent){
+    parent.use(attachLocalApi)
+    parent._router.stack.splice(2, 0, parent._router.stack.pop());
+  });
+
   // If this is not an ajax request, just send our base page
   setupRouter.use(renderBasePage);
-  setupRouter.use(attachLocalApi);
-  console.log('… Discovering API:'.green.bold);
-  beforeApiHook(setupRouter);
+
+  console.log('• Discovering API:'.green.bold);
   discoverAPI(router);
   setupRouter.use(router);
-  afterApiHook(setupRouter);
   console.log("✔ API Discovery Complete".green.bold);
   return setupRouter;
 }
