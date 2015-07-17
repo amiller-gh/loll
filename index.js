@@ -27,7 +27,7 @@ function apiNotFound(req, res, next){
   res.status(400);
   if(req.xhr){
     console.error('✘ Error routing to API path '.red, req.path.red);
-    res.json({code: 404, status: 'error', message: 'Method Not Implemented'});
+    return res.json({code: 404, status: 'error', message: 'Method Not Implemented'});
   }
   next();
 }
