@@ -1,0 +1,30 @@
+{
+  "name": "rebound-api",
+  "version": "1.0.0",
+  "description": "Express middleware to enable declaritive API creation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reboundjs/rebound-api.git"
+  },
+  "keywords": [
+    "express",
+    "API",
+    "middleware",
+    "connect"
+  ],
+  "author": "Adam Miller",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/reboundjs/rebound-api/issues"
+  },
+  "homepage": "https://github.com/reboundjs/rebound-api#readme",
+  "dependencies": {
+    "bluebird": "^2.9.34",
+    "colour": "^0.7.1",
+    "walk": "^2.3.9"
+  }
+}
