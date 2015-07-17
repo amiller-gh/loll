@@ -12,10 +12,10 @@ function beforeApiHook(router){
     var hooks = require(apiDir + '/.hooks.js');
     if(typeof hooks.BEFORE === 'function'){
       router.use(hooks.BEFORE);
-      return console.log('✔ Before API hook registered'.green.bold);
+      return console.log('   ✔ Before API hook registered'.green.bold);
     }
-    console.log('• No before hook found'.yellow);
-  } catch(err){ console.log('• No before hook found'.yellow)}
+    console.log('   • No before hook found'.yellow);
+  } catch(err){ console.log('   • No before hook found'.yellow)}
 }
 
 function afterApiHook(router){
@@ -23,10 +23,10 @@ function afterApiHook(router){
     var hooks = require(apiDir + '/.hooks.js');
     if(typeof hooks.AFTER === 'function'){
       router.use(hooks.AFTER);
-      return console.log('✔ After API hook registered'.green.bold);
+      return console.log('   ✔ After API hook registered'.green.bold);
     }
-    console.log('• No after hook found'.yellow);
-  } catch(err){ console.log('• No after hook found'.yellow)}
+    console.log('   • No after hook found'.yellow);
+  } catch(err){ console.log('   • No after hook found'.yellow)}
 }
 
 function renderBasePage(req, res, next){
@@ -96,17 +96,30 @@ function loadAPI(router, filePath, apiPath){
   var methods = '';
   try {
      handler = require(filePath);
+     // If handler is a function, register it as a get callback
      if(typeof handler === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler));
-     if(typeof handler === 'object'){
+     // If handler is an object with any valid http method, register them
+     else if(typeof handler === 'object' &&
+           (  typeof handler.ALL === 'function'
+           || typeof handler.GET === 'function'
+           || typeof handler.POST === 'function'
+           || typeof handler.PUT === 'function'
+           || typeof handler.DELETE === 'function' )
+      ){
        if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler.ALL));
        if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler.GET));
        if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler.POST));
        if(typeof handler.PUT === 'function' && (methods += ' PUT')) router.put(apiPath, evalAPI(handler.PUT));
        if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler.DELETE));
      }
-     console.log('   • Registered:'.green, apiPath, ('('+methods.trim()+')').yellow);
+     // Otherwise, this is an invalid export. Error.
+     else{
+       return console.error('   ✘ Error in API:'.red.bold, apiPath.bold.black, (' - no valid HTTP method exported').gray);
+     }
+     console.log('   • Registered:'.green, (apiPath ? apiPath : '/'), ('('+methods.trim()+')').yellow);
   } catch(err) {
-    console.error('   ✘ Error in API:  '.red.bold, apiPath);
+    // If require() failed, error
+    console.error('   ✘ Error in API:'.red.bold, apiPath.bold.black, ' - error in the API file'.gray);
     console.error('    ', filePath.underline);
     console.error('    ', err.toString().replace(/(\r\n|\r|\n)/gm, '$1     '))
   }
@@ -146,14 +159,10 @@ function discoverAPI(router){
 
             // When we have loaded all of our API endpoints, register our catchall route
             router.all('*', evalAPI(apiNotFound));
-
-            // Success message
-            console.log("✔ API Discovery Complete".green.bold);
           }
         }
       };
   try{
-    console.log('… Discovering API:'.green.bold);
     walk.walkSync(apiDir, options);
   } catch(e){
     console.error('✘ Error reading API directory:  '.red.bold, e);
@@ -168,12 +177,14 @@ api = function(express){
   var setupRouter = express.Router();
   router = express.Router();
   // If this is not an ajax request, just send our base page
-  setupRouter.use(renderBasePage)
-  setupRouter.use(attachLocalApi)
+  setupRouter.use(renderBasePage);
+  setupRouter.use(attachLocalApi);
+  console.log('… Discovering API:'.green.bold);
   beforeApiHook(setupRouter);
   discoverAPI(router);
   setupRouter.use(router);
   afterApiHook(setupRouter);
+  console.log("✔ API Discovery Complete".green.bold);
   return setupRouter;
 }
 

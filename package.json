@@ -1,6 +1,6 @@
 {
   "name": "rebound-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Express middleware to enable declaritive API creation",
   "main": "index.js",
   "scripts": {
