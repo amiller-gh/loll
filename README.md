@@ -55,7 +55,7 @@ Its quite simple really – the Rebound API middleware checks `req.xhr`:
 
 > **Important:** This middleware will catch all requests – both AJAX and otherwise – so it must be the last middleware in your express server.
 
-
+<h3 align="center">&middot;</h3>
 <h5 align="center">There are three concepts to understand before coding with the Rebound API middleware</h5>
 
 
