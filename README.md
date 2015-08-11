@@ -6,7 +6,7 @@
 #### Wait, what is this again?
 Express is a powerful tool for building Node servers. However, for better or worse, it is very un-opinionated and it can difficult to know how best to organize your API services. This module enables you to use your file system to declare your API endpoints. 
 
-> This module has been spun off into its own project from the [Rebound Seed Project](www.github.org/reboundjs/rebound-seed) and can be used as a standalone library for API creation. Feel free to use this with or without the rest of [Rebound](www.github.org/reboundjs/rebound), though we definately recommend checking it out!
+> Hey! This module has been spun off into its own project from the [Rebound Seed Project](www.github.org/reboundjs/rebound-seed) and can be used as a standalone library for API creation. Feel free to use this with or without the rest of [Rebound](www.github.org/reboundjs/rebound), though we definately recommend checking it out!
 
 <p align="center">
   <h3 align="center">How To Use</h3>
@@ -87,9 +87,9 @@ The Rebound API middleware will display the paths discovered in your console for
 
 ### 2) Writing API Files
 
-> We will be using [jSend](http://labs.omniti.com/labs/jsend), a simple (and personal favorite) JSON format for sending data back and forth between the server and frontend in these examples. Feel free to use whatever specification you like best!
+> We will be using [jSend](http://labs.omniti.com/labs/jsend), a simple (and personal favorite) JSON format for sending data back and forth between the server and frontend, in these examples. Feel free to use whatever specification you like best!
 
-The files in your `/api` folder export the different http methods implemented for this path. As you see in the example above, the methods implemented for a particular path are printed out next to the registered path in the console.
+The files in your `/api` folder export the different http methods implemented for this path. The methods implemented for a particular path are printed out next to the registered path in the console, as shown in section 1.
 
 A simple API file may look like this: 
 ``` JavaScript
@@ -129,7 +129,7 @@ module.exports = function(req, res){
       firstName: 'Luke',
       lastName: 'Skywalker'
     }
-  }
+  };
 };
 ```
 
