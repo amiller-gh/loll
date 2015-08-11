@@ -121,6 +121,7 @@ exports.GET = function(req, res){
  - These middleware should always return either **`JSON`** or a **`Promise`**.
  - The response value will be sent back to the client.
   - If the response is a `Promise`, the Rebound API will wait for it to resolve and send its value.
+  - If the response JSON has the property `code`, it will be use as the HTTP status code of the response.
  - If an error occurs in your API call, it will be: 
   - Gracefully caught 
   - Logged in the console
