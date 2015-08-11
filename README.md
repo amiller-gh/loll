@@ -36,15 +36,6 @@ Then, in your app.js file:
 
 The middleware will catch all requests, so it must be the last middleware in you express server. When called, it will look for a directory called `/api` at the root of your project.
 
-<table>
-  <tr>
-    <td width="33%" >
-<img src="https://cloud.githubusercontent.com/assets/7856443/9189738/905c8b6a-3fa1-11e5-9330-75aeeaf20767.jpg" alt="API Folder Screenshot"/>
-    </td>
-    <td valign="top">
-      <img src="https://cloud.githubusercontent.com/assets/7856443/9189389/9f0ce6a0-3f9c-11e5-8434-54b652f3c11a.jpg" alt="API Discovery Screenshot"/>
-    </td>
-  </tr>
-</table>
+![api_screenshots](https://cloud.githubusercontent.com/assets/7856443/9190079/fb0c9d2a-3fa5-11e5-8565-bbfedc1307af.jpg)
 
 
