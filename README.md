@@ -1,10 +1,16 @@
-## Express Middleware for Declarative API Creation
-
+<p align="center">
+  <img src="http://reboundjs.com/images/rebound-large.svg" alt="Rebound Logo" width="420px" />
+  <h3 align="center">Express Middleware for Declarative API Creation</h3>
+</p>
+- - -
+#### Wait, what is this again?
 Express is a powerful tool for building Node servers. However, for better or worse, it is very un-opinionated and it can difficult to know how best to organize your API services. This module enables you to use your file system to declare your API endpoints. 
 
-## How To Use
-
-To use, simply:
+<p align="center">
+  <h3 align="center">How To Use</h3>
+</p>
+- - -
+Simply:
 ``` Shell
 $ npm install --save rebound-api
 ```
@@ -34,23 +40,57 @@ Then, in your app.js file:
   });
 ```
 
-## How It Works
+<p align="center">
+  <h3 align="center">How It Works</h3>
+</p>
+- - -
 
-The middleware will catch all requests, so it must be the last middleware in you express server. When called, it will look for a directory called `/api` at the root of your project. 
+> **Important:** This middleware will catch all requests – both AJAX and otherwise – so it must be the last middleware in your express server.
 
-### API Discovery
-A project with an `/api` directory like the project on the left, will show the following output when you start your server:
+There are four(4) concepts you need to understand in order to start using the Rebound API middleware:
+
+### 1) API Discovery
+When called, the Rebound API middleware will look for a directory called `/api` at the root of your project. This directory contains all the files that will define your api (how that works is described below), the paths of which define your public facing API paths. 
+
+The project on the left in the below image, will show its corrosponding output when you start your server. This example will be referred to throughout this section:
 
 ![api_screenshots](https://cloud.githubusercontent.com/assets/7856443/9190079/fb0c9d2a-3fa5-11e5-8565-bbfedc1307af.jpg)
 
-### Base Page Delivery
+##### API File Paths:
+The files paths in your `/api` directory **are** the express routes you would normally write at the bottom of your app.js file to handle requests. [Here is the express router documentaiton](http://expressjs.com/guide/routing.html) if you need to brush up on how to write routes.
+
+The file and directory names may be any valid string or string pattern used to describe an Express route. For example: `/user/:uid?.js`, as is shown in the above example, defines a route `user` that can accept an optional `uid` (User ID) parameter.
+
+The file name `index.js` is special. Files named `index.js` will act as the root route for their parent directory. The `donate` directory in the above example shows this well. the directory structure:
+```
+api
+ |--- donate
+        |--- history.js
+        |--- index.js
+```
+Defines two routes: `/donate/history` and `/donate`. An equivelent, but far less convenient, structure would be:
+```
+api
+ |---donate
+ |     |--- history.js
+ |
+ |---donate.js
+```
+
+##### API Path Specificity:
+No more manually managing your route ordering! Your routes are automagically registered with express in order from most to least specific. For instance, above, the `user` paths are loaded in order from most to least specific: `/user/password/recovery` > `/user/login` > `/user/:uid?`. 
+
+##### API Errors
+The Rebound API middleware will display the paths discovered in your console for your debugging pleasure. If there is an error in one of your API files, it will not kill your server. Instead, it will print a nice big, red error for that route along with the error and line number that caused it. Convenient!
+
+### 3) Writing API Files
 
 > On its way...
 
-### Writing APIs
+### 4) Calling APIs Server Side
 
 > On its way...
 
-### Calling APIs Server Side
+### 2) API Response vs. Base Page Delivery
 
 > On its way...
