@@ -6,6 +6,8 @@
 #### Wait, what is this again?
 Express is a powerful tool for building Node servers. However, for better or worse, it is very un-opinionated and it can difficult to know how best to organize your API services. This module enables you to use your file system to declare your API endpoints. 
 
+> This module has been spun off into its own project from the [Rebound Seed Project](www.github.org/reboundjs/rebound-seed) and can be used as a standalone library for API creation. Feel free to use this with or without the rest of [Rebound](www.github.org/reboundjs/rebound), though we definately recommend checking it out!
+
 <p align="center">
   <h3 align="center">How To Use</h3>
 </p>
@@ -47,7 +49,7 @@ Then, in your app.js file:
 
 > **Important:** This middleware will catch all requests – both AJAX and otherwise – so it must be the last middleware in your express server.
 
-There are four(4) concepts you need to understand in order to start using the Rebound API middleware:
+There are four (4) concepts you need to understand in order to start using the Rebound API middleware:
 
 ### 1) API Discovery
 When called, the Rebound API middleware will look for a directory called `/api` at the root of your project. This directory contains all the files that will define your api (how that works is described below), the paths of which define your public facing API paths. 
@@ -83,14 +85,106 @@ No more manually managing your route ordering! Your routes are automagically reg
 ##### API Errors
 The Rebound API middleware will display the paths discovered in your console for your debugging pleasure. If there is an error in one of your API files, it will not kill your server. Instead, it will print a nice big, red error for that route along with the error and line number that caused it. Convenient!
 
-### 3) Writing API Files
+### 2) Writing API Files
 
-> On its way...
+> We will be using [jSend](http://labs.omniti.com/labs/jsend), a simple (and personal favorite) JSON format for sending data back and forth between the server and frontend in these examples. Feel free to use whatever specification you like best!
 
-### 4) Calling APIs Server Side
+The files in your `/api` folder export the different http methods implemented for this path. As you see in the example above, the methods implemented for a particular path are printed out next to the registered path in the console.
 
-> On its way...
+A simple API file may look like this: 
+``` JavaScript
+// This file implements the `GET` HTTP method, which returns a JSON blob. 
+// This JSON is sent back to the client and the response is closed. 
+exports.GET = function(req, res){
+  return {
+    status: 'success',
+    data: {
+      firstName: 'Luke',
+      lastName: 'Skywalker'
+    }
+};
+```
 
-### 2) API Response vs. Base Page Delivery
+**For you lazy people out there – a tl;dr**:
+ - These HTTP method implementations **are middleware**.
+ - Different HTTP methods are named exports from your API file.
+ - Like any other middleware, they are passed the `req` and `res` objects.
+ - These API definitions do not accept a `next` callback – they are always the last middleware before a response.
+ - These middleware should always return either **`JSON`** or a **`Promise`**.
+ - The response value will be sent back to the client.
+  - If the response is a `Promise`, the Rebound API will wait for it to resolve and send its value.
+ - If an error occurs in your API call, it will be: 
+  - Gracefully caught 
+  - Logged in the console
+  - And `500` response will be sent back to the client
 
-> On its way...
+**The full explaination**:
+An API file that only exports a single function will default to the `GET` http method: 
+``` JavaScript
+// Same as the example above
+module.exports = function(req, res){
+  return {
+    status: 'success',
+    data: {
+      firstName: 'Luke',
+      lastName: 'Skywalker'
+    }
+  }
+};
+```
+
+An API file that may export multiple HTTP method names:
+``` JavaScript
+module.GET = function(req, res){
+ // Make a database call or something here
+  return {
+    status: 'success',
+    data: {
+      firstName: 'Luke',
+      lastName: 'Skywalker'
+    }
+  };
+};
+
+module.POST = function(req, res){
+ // Update your database or something here
+  return { status: 'success' };
+};
+```
+
+An API method implementation may return a Promise. Rebound API will wait for the promise to resolve or reject and sent its resolved or rejected value back to the client. Great for asynchronous database calls:
+``` JavaScript
+var Promise = require("bluebird");
+
+module.GET = function(req, res){
+ // Make an async database call or something here
+  return new Promise(function(resolve, reject){
+    resolve({
+      status: 'success',
+      data: {
+        firstName: 'Luke',
+        lastName: 'Skywalker'
+      }
+    });
+  });
+};
+
+module.POST = function(req, res){
+ // Do some async validation or something here
+  return new Promise(function(resolve, reject){
+    reject({
+      status: 'error',
+      code: '403',  // If the response has a property `code`, it will be used as the http response code.
+      message: 'You are not authorized to post to this endpoint!'
+    });
+  });
+};
+```
+
+### 3) Calling APIs Server Side
+
+> Documentation on its way...
+
+### 4) API Response vs. Base Page Delivery
+
+> Documentation on its way...
