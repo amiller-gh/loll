@@ -47,12 +47,20 @@ Then, in your app.js file:
 </p>
 - - -
 
+Its quite simple really – the Rebound API middleware checks `req.xhr`:
+
+**If the request *is* an AJAX request**, it will attempt to roue to an API endpoint defined in your project's `/api` directory and send a JSON response back to the client. 
+
+**If the request *is not* an AJAX request**, it will respond using a file that you specify (defaults to `/index.html`).
+
 > **Important:** This middleware will catch all requests – both AJAX and otherwise – so it must be the last middleware in your express server.
 
-There are four (4) concepts you need to understand in order to start using the Rebound API middleware:
+
+<h5 align="center">There are three concepts to understand before coding with the Rebound API middleware</h5>
+
 
 ### 1) API Discovery
-When called, the Rebound API middleware will look for a directory called `/api` at the root of your project. This directory contains all the files that will define your api (how that works is described below), the paths of which define your public facing API paths. 
+When starting, the Rebound API middleware will look for a directory called `/api` at the root of your project. This directory contains all the files that will define your api (how that works is described below), the paths of which define your public facing API paths. 
 
 The project on the left in the below image, will show its corrosponding output when you start your server. This example will be referred to throughout this section:
 
@@ -117,6 +125,7 @@ exports.GET = function(req, res){
   - Gracefully caught 
   - Logged in the console
   - And `500` response will be sent back to the client
+ - If no route is found that matches the request, a `400` response is sent back to the client
 
 **The full explaination**:
 An API file that only exports a single function will default to the `GET` http method: 
@@ -185,6 +194,3 @@ module.POST = function(req, res){
 
 > Documentation on its way...
 
-### 4) API Response vs. Base Page Delivery
-
-> Documentation on its way...
