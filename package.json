@@ -1,7 +1,7 @@
 {
   "name": "rebound-api",
-  "version": "1.0.3",
-  "description": "Express middleware to enable declaritive API creation",
+  "version": "1.0.4",
+  "description": "An Express middleware for elegant API creation",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,7 +12,8 @@
   },
   "keywords": [
     "express",
-    "API",
+    "api",
+    "REST",
     "middleware",
     "connect"
   ],

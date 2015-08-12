@@ -1,6 +1,6 @@
 <p align="center">
   <img src="http://reboundjs.com/images/rebound-large.svg" alt="Rebound Logo" width="420px" />
-  <h3 align="center">Express Middleware for Declarative API Creation</h3>
+  <h3 align="center">Express Middleware for Elegant API Creation</h3>
 </p>
 - - -
 #### Wait, what is this again?
