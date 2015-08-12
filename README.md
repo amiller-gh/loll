@@ -115,7 +115,7 @@ exports.GET = function(req, res){
 
 **For you lazy people out there – a tl;dr**:
  - These HTTP method implementations **are middleware**.
- - Different HTTP methods are named exports from your API file.
+ - Different HTTP methods are named exports from your API file. Current valid methods are `ALL`, `GET`, `POST`, `UPDATE` and `DELETE`.
  - Like any other middleware, they are passed the `req` and `res` objects.
  - These API definitions do not accept a `next` callback – they are always the last middleware before a response.
  - These middleware should always return either **`JSON`** or a **`Promise`**.
@@ -193,5 +193,68 @@ module.POST = function(req, res){
 
 ### 3) Calling APIs Server Side
 
-> Documentation on its way...
+The Rebound API middleware puts an `api` property on on the `res.locals` object at the begining of every new request and is accessable to every middleware in your express app. It exposes `get`, `post`, `put` and `delete` methods which each take a url and optional data object. This allows you to consume your API calls server side to build more powerful services, as well as client side.
 
+A server side call looks like this:
+
+``` JavaScript
+res.locals.api.get('/user/123')
+   .then(function(result){
+     // You have access to the API result here
+   });
+```
+
+An internal API call will always return a Promise, regardless of if the API function returns a Promise itself, or just a JSON blob.
+
+You are able to pass internal API calls an optional JSON object as a second paramater. This object will augment the `req.body` object on the original request object for the lifetime of the internal API call.
+> Our API file `/api/user/:uid.js`
+``` JavaScript
+exports.POST = function(req, res){
+  // req.body == { firstName: 'Ash', numPkmn: 6 }
+  return { status: 'success', data: { yell: 'Gotta Catch 'Em All!' }}
+}
+```
+
+> Middleware posting to `/user/:uid`
+``` JavaScript
+function(req, res){
+  // req.body = { numPkmn: 6 }
+  res.locals.api.post('/user/123', { firstName: 'Ash' })
+   .then(function(result){
+    // You have access to the API result here
+    // result.data == { yell: 'Gotta Catch 'Em All!' }
+    // req.body == { numPkmn: 6 }
+   });
+}
+```
+
+The fact that internal APIs always return a promise allows us to do some creative things when drafting other API calls, consuming existing APIs to create new ones.
+
+> An API file `/api/profile/:uid.js`. This endpoint returns an entire profile object. So much info!
+``` JavaScript
+exports.GET = function(req, res){
+  return { 
+    status: 'success', 
+    data: { 
+      firstName: 'Ash',
+      lastName: 'Ketchum',
+      numPkmn: 151,
+      hometown: 'Pallet Town'
+    }
+  }
+}
+```
+
+> An API file `/api/miniprofile/:uid.js`. This miniprofile API endpoint will only return the `firstName` and `lastName` properties of the full profile.
+``` JavaScript
+exports.GET = function(req, res){
+  res.locals.api.get('/user/' + req.params.uid)
+   .then(function(result){
+      result.data = {
+          firstName: result.data.firstName,
+          lastName: result.data.lastName
+        };
+      return result;
+   });
+}
+```
