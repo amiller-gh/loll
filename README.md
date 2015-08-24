@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="http://reboundjs.com/images/rebound-large.svg" alt="Rebound Logo" width="420px" />
+  <img src="http://reboundjs.com/assets/images/logos/large.svg" alt="Rebound Logo" width="420px" />
   <h3 align="center">An Express Middleware for Elegant API Creation</h3>
 </p>
 - - -
