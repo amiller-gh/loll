@@ -1,0 +1,48 @@
+{
+  "include": [ "src/**/*", "test/**/*" ],
+  "compilerOptions": {
+
+    "outDir": "dist",
+    "baseUrl": "dist",
+    "lib": [ "es7", "es2017", "dom" ],
+
+    // JSX Settings for Preact
+    "jsx": "react",
+    "jsxFactory": "h",
+
+    // Compilation Configuration
+    "target": "es2015",
+    "inlineSources": true,
+    "inlineSourceMap": true,
+    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Environment Configuration
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+
+    // Enhance Strictness
+    "noImplicitAny": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "noUnusedParameters": true,
+    "allowUnreachableCode": false,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "strictFunctionTypes": true,
+    "alwaysStrict": true,
+    "strictPropertyInitialization": true,
+
+    // output options
+    "preserveConstEnums": false,
+    "newLine": "LF",
+    "traceResolution": false,
+    "module": "commonjs",
+
+  },
+
+  "references": []
+}
