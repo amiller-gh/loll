@@ -4,9 +4,15 @@ import * as Express from 'express';
 import * as walk from 'walk';
 import * as chalk from 'chalk';
 
-const DEFAULT_API_DIR = path.join(process.cwd(), 'api');
+const DEFAULT_API_ROOT = path.join(process.cwd(), 'api');
 
-type Method = 'ALL' | 'GET' | 'POST' | 'PUT' | 'DELETE';
+const enum Method {
+  ALL = 'ALL',
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
+}
 
 export interface IApiHandler {
   ALL?: Express.RequestHandler;
@@ -16,24 +22,29 @@ export interface IApiHandler {
   DELETE?: Express.RequestHandler;
 }
 
+export interface LollOptions {
+  root?: string;
+}
+
+const isXhr = (req: Express.Request): boolean => req.xhr || (req.headers.accept || '').includes('json') || req.headers.accept === '*/*';
+
 // If no API endpoint takes the bait, return the properly formatted 400 error
 // for the media requested. JSON for ajax, just the http status code for all others
 function apiNotFound(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-  if(typeof req !== 'object') return;
-  res.status(400);
-  if(req.xhr){
-    console.error(chalk.red('✘ Error routing to API path '), chalk.red(req.path));
-    return res.json({code: 404, status: 'error', message: 'Method Not Implemented'});
-  }
-  return next();
+  if(!isXhr(req)) { next(); }
+  console.error(chalk.red('✘ Error routing to API path '), chalk.red(req.path));
+  return res.status(400).json({ code: 400, status: 'error', message: 'Method Not Implemented' });
 }
 
 const evalAPI = function(func: Express.RequestHandler) {
   return async function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
 
+    // If this is not an XHR request, skip.
+    if(!isXhr(req)) { next(); }
+
     // Evaluate API function
     try {
-      const result = await func(req, res, next);
+      const result = await func(req, res, () => {});
 
       // If they've returned the response object, assume we've sent the result already.
       if (result === res) { return result; }
@@ -55,34 +66,44 @@ const evalAPI = function(func: Express.RequestHandler) {
   }
  };
 
+function getHandler(filePath: string): IApiHandler | Express.RequestHandler {
+  const obj = require(filePath);
+  return typeof obj === 'object' && obj.default ? obj.default : obj;
+}
+
 function hasValidMethod(handler: IApiHandler){
   return typeof handler === 'object' &&
      (  typeof handler.ALL === 'function'
         || typeof handler.GET === 'function'
         || typeof handler.POST === 'function'
         || typeof handler.PUT === 'function'
-        || typeof handler.DELETE === 'function')
+        || typeof handler.DELETE === 'function'
+      )
 }
 
 function loadAPI(router: Express.Router, filePath: string, apiPath: string){
   let methods = '';
   try {
-     const handler = require(filePath) as IApiHandler;
-     // If handler is a function, register it as a get callback
-     if (typeof handler === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler));
-     // If handler is an object with any valid http method, register them
-     else if (hasValidMethod(handler)) {
-       if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler.ALL));
-       if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler.GET));
-       if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler.POST));
-       if(typeof handler.PUT === 'function' && (methods += ' PUT')) router.put(apiPath, evalAPI(handler.PUT));
-       if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler.DELETE));
-     }
-     // Otherwise, this is an invalid export. Error.
-     else {
-       return console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold(apiPath), chalk.gray(' - no valid HTTP method exported'));
-     }
-     console.log(chalk.green('   • Registered:'), (apiPath ? apiPath : '/'), chalk.yellow('('+methods.trim()+')'));
+    const handler = getHandler(filePath);
+
+    // If handler is a function, register it as a get callback
+    if (typeof handler === 'function') {
+      router.get(apiPath, evalAPI(handler));
+      methods += ' GET'
+    }
+    // If handler is an object with any valid http method, register them
+    else if (hasValidMethod(handler)) {
+      if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler.ALL));
+      if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler.GET));
+      if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler.POST));
+      if(typeof handler.PUT === 'function' && (methods += ' PUT')) router.put(apiPath, evalAPI(handler.PUT));
+      if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler.DELETE));
+    }
+    // Otherwise, this is an invalid export. Error.
+    else {
+      return console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold(apiPath), chalk.gray(' - no valid HTTP method exported'));
+    }
+    console.log(chalk.green('   • Registered:'), (apiPath ? apiPath : '/'), chalk.yellow('('+methods.trim()+')'));
   } catch(err) {
     // If require() failed, error
     console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold(apiPath), chalk.gray(' - error in the API file'));
@@ -154,7 +175,7 @@ class ApiQuery {
       url: { writable: true, configurable: true, value: this.path },
       method: { writable: true, configurable: true, value: method },
       ip: { writable: true, configurable: true, value: '127.0.0.1' },
-      body: { writable: true, configurable: true, value: (body || {}) },
+      body: { writable: true, configurable: true, value: body },
       query: { writable: true, configurable: true, value: {} },
       params: { writable: true, configurable: true, value: {} },
       originalUrl: { writable: true, configurable: true, value: undefined },
@@ -171,6 +192,7 @@ class ApiQuery {
 
     // Handle
     try {
+      // TODO: The @types/express typescript definitions don't have `Router.handle()`. Add this?
       await (this.router as any).handle(this.req, this.res, async (result: Promise<any> | any) => {
 
         try {
@@ -206,49 +228,32 @@ class ApiQuery {
 // Creates a new express Router using the parent application's version of express
 // And adds a middleware that attaches a new instance of the api query function
 // to each request's locals object.
-export default function api(express: any, apiPath: string = DEFAULT_API_DIR) {
-  const setupRouter = express() as Express.Express;
+export default function loll(express: any, options: LollOptions = {}) {
+  const app = express() as Express.Express;
   const router = express.Router() as Express.Router;
 
   // Hacky. Force the parent router to attach the locals.api interface at the beginning of each request
-  setupRouter.on('mount', function(parent){
-    parent.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-      res.locals.api = {
-        get: function GET_factory(path: string, body: any){
-          return new ApiQuery(router, 'GET', req, res, path, body);
-        },
-        post: function POST_factory(path: string, body: any){
-          return new ApiQuery(router, 'POST', req, res, path, body);
-        },
-        put: function PUT_factory(path: string, body: any){
-          return new ApiQuery(router, 'PUT', req, res, path, body);
-        },
-        delete: function DELETE_factory(path: string, body: any){
-          return new ApiQuery(router, 'DELETE', req, res, path, body);
-        }
-      };
-      next();
-    });
-
-    parent._router.stack.splice(2, 0, parent._router.stack.pop());
-  });
-
-  // If this is not an ajax request, and request is for an asset that accepts html,
-  // then this must be a first time render - just send our base page down.
-  setupRouter.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-    if(typeof req === 'object' && !req.xhr && req.accepts(['*/*', 'text/html']) === 'text/html') {
-      return res.sendfile(path.join(apiPath, '/index.html'), {}, function (err: any) {
-        if (err) res.status((err) ? err.status : 500);
-        else res.status(200);
-      });
-    }
+  app.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    res.locals.api = {
+      get: function GET_factory(path: string, body: any){
+        return new ApiQuery(router, Method.GET, req, res, path, body);
+      },
+      post: function POST_factory(path: string, body: any){
+        return new ApiQuery(router, Method.POST, req, res, path, body);
+      },
+      put: function PUT_factory(path: string, body: any){
+        return new ApiQuery(router, Method.PUT, req, res, path, body);
+      },
+      delete: function DELETE_factory(path: string, body: any){
+        return new ApiQuery(router, Method.DELETE, req, res, path, body);
+      }
+    };
     next();
   });
 
   console.log(chalk.bold.green('• Discovering API:'));
-  discoverAPI(router, apiPath);
-  console.log(router);
-  setupRouter.use(router);
+  discoverAPI(router, options.root || DEFAULT_API_ROOT);
+  app.use(router);
   console.log(chalk.bold.green('✔ API Discovery Complete'));
-  return setupRouter;
+  return app;
 }
