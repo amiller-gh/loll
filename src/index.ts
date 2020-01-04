@@ -34,10 +34,14 @@ const evalAPI = function(func: Express.RequestHandler) {
     // Evaluate API function
     try {
       const result = await func(req, res, next);
-      if(typeof result === 'object'){
-        return res.status((result.code || 200)).json(result);
-      }
 
+      // If they've returned the response object, assume we've sent the result already.
+      if (result === res) { return result; }
+
+      // If it appears to be a JSON response, send it down.
+      if (typeof result === 'object') { return res.status((result.code || 200)).json(result); }
+
+      // Otherwise, we're rather confused... alert the world.
       console.error('✘ API endpoint returned something other than JSON or a Promise:', result, func);
       return res.status(500).json({status: 'error', message: 'Invalid Response'});
 
@@ -65,9 +69,9 @@ function loadAPI(router: Express.Router, filePath: string, apiPath: string){
   try {
      const handler = require(filePath) as IApiHandler;
      // If handler is a function, register it as a get callback
-     if(typeof handler === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler));
+     if (typeof handler === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler));
      // If handler is an object with any valid http method, register them
-     else if(hasValidMethod(handler)){
+     else if (hasValidMethod(handler)) {
        if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler.ALL));
        if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler.GET));
        if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler.POST));
@@ -75,13 +79,13 @@ function loadAPI(router: Express.Router, filePath: string, apiPath: string){
        if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler.DELETE));
      }
      // Otherwise, this is an invalid export. Error.
-     else{
-       return console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold.black(apiPath), chalk.gray(' - no valid HTTP method exported'));
+     else {
+       return console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold(apiPath), chalk.gray(' - no valid HTTP method exported'));
      }
      console.log(chalk.green('   • Registered:'), (apiPath ? apiPath : '/'), chalk.yellow('('+methods.trim()+')'));
   } catch(err) {
     // If require() failed, error
-    console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold.black(apiPath), chalk.gray(' - error in the API file'));
+    console.error(chalk.bold.red('   ✘ Error in API:'), chalk.bold(apiPath), chalk.gray(' - error in the API file'));
     console.error('    ', chalk.underline(filePath));
     console.error('    ', err.toString().replace(/(\r\n|\r|\n)/gm, '$1     '))
   }
@@ -98,7 +102,7 @@ function discoverAPI(router: Express.Router, apiDir: string){
         listeners: {
           file: function (root: string, fileStats: walk.WalkStats, next: walk.WalkNext) {
             // Ignore hidden files
-            if(fileStats.name[0] === '.') return next();
+            if(fileStats.name[0] === '.' || !~fileStats.name.indexOf('.js')) return next();
 
             // Construct both the absolute file path, and public facing API path
             var filePath = path.join(root, fileStats.name),
@@ -206,7 +210,7 @@ export default function api(express: any, apiPath: string = DEFAULT_API_DIR) {
   const setupRouter = express() as Express.Express;
   const router = express.Router() as Express.Router;
 
-  // Hacky. Force the parent router to attach the locals.api interface at the begining of each request
+  // Hacky. Force the parent router to attach the locals.api interface at the beginning of each request
   setupRouter.on('mount', function(parent){
     parent.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
       res.locals.api = {
@@ -225,6 +229,7 @@ export default function api(express: any, apiPath: string = DEFAULT_API_DIR) {
       };
       next();
     });
+
     parent._router.stack.splice(2, 0, parent._router.stack.pop());
   });
 
@@ -242,6 +247,7 @@ export default function api(express: any, apiPath: string = DEFAULT_API_DIR) {
 
   console.log(chalk.bold.green('• Discovering API:'));
   discoverAPI(router, apiPath);
+  console.log(router);
   setupRouter.use(router);
   console.log(chalk.bold.green('✔ API Discovery Complete'));
   return setupRouter;

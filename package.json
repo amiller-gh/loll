@@ -1,8 +1,8 @@
 {
-  "name": "rebound-api",
-  "version": "2.0.0-beta.0",
-  "description": "An Express middleware for elegant API creation",
-  "main": "index.js",
+  "name": "loll",
+  "version": "0.0.1",
+  "description": "REST apps for the lazy developer.",
+  "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc --jsx preserve -p tsconfig.json",
     "pretest": "yarn run build",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/reboundjs/rebound-api.git"
+    "url": "git+https://github.com/amiller-gh/loll.git"
   },
   "keywords": [
     "express",
@@ -24,9 +24,9 @@
   "author": "Adam Miller",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/reboundjs/rebound-api/issues"
+    "url": "https://github.com/amiller-gh/loll/issues"
   },
-  "homepage": "https://github.com/reboundjs/rebound-api#readme",
+  "homepage": "https://github.com/amiller-gh/loll#readme",
   "dependencies": {
     "chalk": "^3.0.0",
     "walk": "^2.3.9"
