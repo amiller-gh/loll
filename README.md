@@ -1,4 +1,4 @@
-# 🍭 Loll – Easy REST Apis for the Lazy Developer
+# 🍭 Loll – Easy REST APIs for the Lazy Developer
 
 Loll enables you to use the file system to declare RESTful API endpoints for your Express application, encouraging convention over configuration for your server side Express code.
 
