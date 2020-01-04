@@ -4,36 +4,43 @@ Loll enables you to use the file system to declare RESTful API endpoints for you
 
 ## How To Use
 
-Simply:
+#### To install, simply:
 ``` Shell
 npm install --save loll
 ### or ###
 yarn add loll
 ```
 
-Then, in your app.js file:
+#### Then, in your app.js file:
 ``` JavaScript
 // Get our dependencies
 const express = require('express');
-const api     = require('loll');
+const loll     = require('loll');
   
 // Init Core
 const app = express();
 app.set('port', 8080);
 
-  
 /******************************************* 
        Additional Middleware Go Here
 *******************************************/
   
 // Automatically discover API endpoints. Defaults to the `/api` directory.
-app.use('/api', api(express));
+app.use('/api', loll(express));
 
 // Start Server
-http.createServer(app).listen(app.get('port'), function(){
-  console.log(('Express server listening on port ' + app.get('port')));
+http.createServer(app).listen(app.get('port'), () => {
+  console.log(`Express server listening on port ${app.get('port')}`);
 });
 ```
+
+#### Configuration
+Loll takes an optional configuration hash as a second argument that accepts the following settings.
+
+| Name   | Type   | Default                           | Description                                                  |
+|:-------|:-------|:----------------------------------|:-------------------------------------------------------------|
+| `root` | String | `path.join(process.cwd(), 'api')` | The directory that Loll will crawl to discover API endpoints |
+
 
 ## How It Works
 
