@@ -1,40 +1,38 @@
-<p align="center">
-  <img src="http://reboundjs.com/assets/images/logos/large.svg" alt="Rebound Logo" width="420px" />
-  <h3 align="center">An Express Middleware for Elegant API Creation</h3>
-</p>
+# 🍭 Loll
+## Easy REST Apis for the Lazy Developer
 - - -
-#### Wait, what is this again?
-Express is a powerful tool for building Node servers. However, for better or worse, it is very un-opinionated and it can difficult to know how best to organize your API services. This module enables you to use your file system to declare your API endpoints. 
+#### What is this?
+Loll enables you to use the file system to declare RESTful API endpoints for your Express application.
 
-> Hey! This module has been spun off into its own project from the [Rebound Seed Project](www.github.org/reboundjs/rebound-seed) and can be used as a standalone library for API creation. Feel free to use this with or without the rest of [Rebound](www.github.org/reboundjs/rebound), though we definately recommend checking it out!
+Express is a powerful tool for building Node servers. However, for better or worse, it is rather un-opinionated and it can difficult to know how best to organize your API services.
 
-<p align="center">
-  <h3 align="center">How To Use</h3>
-</p>
+### How To Use
 - - -
 Simply:
 ``` Shell
-$ npm install --save rebound-api
+$ npm install --save loll
+$ ### or ###
+$ yarn add loll
 ```
 
 Then, in your app.js file:
 ``` JavaScript
-// Get our dependancies
-  var express = require('express');
-  var api     = require('rebound-api');
+// Get our dependencies
+  const express = require('express');
+  const api     = require('loll');
   
 // Init Core
-  var app = express();
+  const app = express();
   app.set('port', PORT);
-  
+
   
 /******************************************* 
-       Additional Middleware Go Here 
+       Additional Middleware Go Here
 *******************************************/
   
   
-// Automatically discover API endpoints in `/api` directory. Must be last middleware.
-  app.use(api(express));
+// Automatically discover API endpoints. Defaults to the `/api` directory.
+  app.use('/api', api(express));
 
 // Start Server
   http.createServer(app).listen(app.get('port'), function(){
@@ -42,27 +40,19 @@ Then, in your app.js file:
   });
 ```
 
-<p align="center">
-  <h3 align="center">How It Works</h3>
-</p>
+### How It Works
 - - -
 
-Its quite simple really – the Rebound API middleware checks `req.xhr`:
+Its quite simple really – the Loll middleware checks `req.xhr`:
 
 **If the request *is* an AJAX request**, it will attempt to roue to an API endpoint defined in your project's `/api` directory and send a JSON response back to the client. 
 
-**If the request *is not* an AJAX request**, it will respond using a file that you specify (defaults to `/index.html`).
-
-> **Important:** This middleware will catch all requests – both AJAX and otherwise – so it must be the last middleware in your express server.
-
-<h3 align="center">&middot;</h3>
-<h5 align="center">There are three concepts to understand before coding with the Rebound API middleware</h5>
-
+#### There are three concepts to understand before coding with the Loll middleware
 
 ### 1) API Discovery
-When starting, the Rebound API middleware will look for a directory called `/api` at the root of your project. This directory contains all the files that will define your api (how that works is described below), the paths of which define your public facing API paths. 
+When starting, the Loll middleware will look for a directory called `/api` at the root of your project. This directory contains all the files that will define your api (how that works is described below), the paths of which define your public facing API paths.
 
-The project on the left in the below image, will show its corrosponding output when you start your server. This example will be referred to throughout this section:
+The project on the left in the below image, will show its corresponding output when you start your server. This example will be referred to throughout this section:
 
 ![api_screenshots](https://cloud.githubusercontent.com/assets/7856443/9190079/fb0c9d2a-3fa5-11e5-8565-bbfedc1307af.jpg)
 
@@ -91,11 +81,11 @@ api
 No more manually managing your route ordering! Your routes are automagically registered with express in order from most to least specific. For instance, above, the `user` paths are loaded in order from most to least specific: `/user/password/recovery` > `/user/login` > `/user/:uid?`. 
 
 ##### API Errors
-The Rebound API middleware will display the paths discovered in your console for your debugging pleasure. If there is an error in one of your API files, it will not kill your server. Instead, it will print a nice big, red error for that route along with the error and line number that caused it. Convenient!
+Loll will display the paths discovered in your console for your debugging pleasure. If there is an error in one of your API files, it will not kill your server. Instead, it will print a nice big, red error for that route along with the error and line number that caused it. Convenient!
 
 ### 2) Writing API Files
 
-> We will be using [jSend](http://labs.omniti.com/labs/jsend), a simple (and personal favorite) JSON format for sending data back and forth between the server and frontend, in these examples. Feel free to use whatever specification you like best!
+> I will be using [jSend](http://labs.omniti.com/labs/jsend), a simple (and personal favorite) JSON format for sending data back and forth between the server and frontend, in these examples. Feel free to use whatever specification you like best!
 
 The files in your `/api` folder export the different http methods implemented for this path. The methods implemented for a particular path are printed out next to the registered path in the console, as shown in section 1.
 
@@ -113,23 +103,22 @@ exports.GET = function(req, res){
 };
 ```
 
-**For you lazy people out there – a tl;dr**:
- - These HTTP method implementations **are middleware**.
- - Different HTTP methods are named exports from your API file. Current valid methods are `ALL`, `GET`, `POST`, `UPDATE` and `DELETE`.
- - Like any other middleware, they are passed the `req` and `res` objects.
- - These API definitions do not accept a `next` callback – they are always the last middleware before a response.
- - These middleware should always return either **`JSON`** or a **`Promise`**.
- - The response value will be sent back to the client.
-  - If the response is a `Promise`, the Rebound API will wait for it to resolve and send its value.
-  - If the response JSON has the property `code`, it will be use as the HTTP status code of the response.
- - If an error occurs in your API call, it will be: 
-  - Gracefully caught 
-  - Logged in the console
-  - And `500` response will be sent back to the client
- - If no route is found that matches the request, a `400` response is sent back to the client
+**For you other lazy people out there – a tl;dr**:
+  - Your HTTP method implementations **are middleware** and are passed the `req` and `res` objects.
+  - These API definitions do not accept a `next` callback – they are always the last middleware before a response.
+  - These HTTP methods are defined as named exports from your API file. Automatically discovered methods are `ALL`, `GET`, `POST`, `UPDATE` and `DELETE`.
+  - These middleware should always return either **`POJO`**  or a **`Promise`** that resolves to a **`POJO`**.
+  - The response value will be sent back to the client.
+    - If the response is a `Promise`, Loll will wait for it to resolve and send its value.
+    - If the response JSON has the property `code`, it will be use as the HTTP status code of the response.
+  - If an error occurs in your API call, Loll will:
+    - Gracefully catch the error
+    - Log it in the console
+    - Send a `500 Internal Service Error` response back to the client
+  - If no route is found that matches the request, a `400 Bad Request` response is sent back to the client
 
-**The full explaination**:
-An API file that only exports a single function will default to the `GET` http method: 
+**The full explanation**:
+An API file that only exports a single function will default to the `GET` http method:
 ``` JavaScript
 // Same as the example above
 module.exports = function(req, res){
@@ -162,13 +151,11 @@ module.POST = function(req, res){
 };
 ```
 
-An API method implementation may return a Promise. Rebound API will wait for the promise to resolve or reject and sent its resolved or rejected value back to the client. Great for asynchronous database calls:
+An API method implementation may choose to return a Promise, or be defined as an async function. Loll will wait for the promise to resolve or reject and sent its resolved or rejected value back to the client. Great for asynchronous database calls:
 ``` JavaScript
-var Promise = require("bluebird");
-
 module.GET = function(req, res){
  // Make an async database call or something here
-  return new Promise(function(resolve, reject){
+  return new Promise(function(resolve, _reject){
     resolve({
       status: 'success',
       data: {
@@ -179,21 +166,19 @@ module.GET = function(req, res){
   });
 };
 
-module.POST = function(req, res){
+module.POST = async function(req, res){
  // Do some async validation or something here
-  return new Promise(function(resolve, reject){
-    reject({
-      status: 'error',
-      code: '403',  // If the response has a property `code`, it will be used as the http response code.
-      message: 'You are not authorized to post to this endpoint!'
-    });
-  });
+  return {
+    status: 'error',
+    code: '403',  // If the response has a property `code`, it will be used as the http response code.
+    message: 'You are not authorized to post to this endpoint!'
+  };
 };
 ```
 
 ### 3) Calling APIs Server Side
 
-The Rebound API middleware puts an `api` property on on the `res.locals` object at the begining of every new request and is accessable to every middleware in your express app. It exposes `get`, `post`, `put` and `delete` methods which each take a url and optional data object. This allows you to consume your API calls server side to build more powerful services, as well as client side.
+The Loll middleware puts an `api` property on on the `res.locals` object at the beginning of every new request and is accessible to every middleware in your express app. It exposes `get`, `post`, `put` and `delete` methods which each take a url and optional data object. This allows you to consume your API calls server side to build more powerful services, as well as client side.
 
 A server side call looks like this:
 
@@ -206,29 +191,30 @@ res.locals.api.get('/user/123')
 
 An internal API call will always return a Promise, regardless of if the API function returns a Promise itself, or just a JSON blob.
 
-You are able to pass internal API calls an optional JSON object as a second paramater. This object will augment the `req.body` object on the original request object for the lifetime of the internal API call.
+You are able to pass internal API calls an optional JSON object as a second parameter. This object will replace `req.body` on the original request object only for the lifetime of the internal API call.
 > Our API file `/api/user/:uid.js`
 ``` JavaScript
 exports.POST = function(req, res){
-  // req.body == { firstName: 'Ash', numPkmn: 6 }
-  return { status: 'success', data: { yell: 'Gotta Catch 'Em All!' }}
+  console.log(req.body);
+  return { status: 'success', data: { yell: "Gotta Catch 'Em All!" }}
 }
 ```
 
 > Middleware posting to `/user/:uid`
 ``` JavaScript
-function(req, res){
-  // req.body = { numPkmn: 6 }
-  res.locals.api.post('/user/123', { firstName: 'Ash' })
-   .then(function(result){
-    // You have access to the API result here
-    // result.data == { yell: 'Gotta Catch 'Em All!' }
-    // req.body == { numPkmn: 6 }
-   });
+async function(req, res){
+  // Logs: { numPkmn: 6 }
+  console.log(req.body);
+
+  // Logs: { firstName: 'Ash' }
+  const res = await res.locals.api.post('/user/123', { firstName: 'Ash' })
+
+  // Logs: { yell: "Gotta Catch 'Em All!" }
+  console.log(res.data);
 }
 ```
 
-The fact that internal APIs always return a promise allows us to do some creative things when drafting other API calls, consuming existing APIs to create new ones.
+The fact that internal APIs always return a promise allows us to do some creative things while drafting dependent API calls, like consuming existing APIs to create new ones.
 
 > An API file `/api/profile/:uid.js`. This endpoint returns an entire profile object. So much info!
 ``` JavaScript
@@ -245,16 +231,16 @@ exports.GET = function(req, res){
 }
 ```
 
-> An API file `/api/miniprofile/:uid.js`. This miniprofile API endpoint will only return the `firstName` and `lastName` properties of the full profile.
+> An API file `/api/miniprofile/:uid.js`. This mini-profile API endpoint will only return the `firstName` and `lastName` properties of the full profile.
 ``` JavaScript
 exports.GET = function(req, res){
-  res.locals.api.get('/user/' + req.params.uid)
-   .then(function(result){
-      result.data = {
-          firstName: result.data.firstName,
-          lastName: result.data.lastName
-        };
-      return result;
-   });
+  const result = res.locals.api.get('/user/' + req.params.uid)
+  return {
+    status: 'success',
+    data: {
+      firstName: result.data.firstName,
+      lastName: result.data.lastName
+    }
+  };
 }
 ```
