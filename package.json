@@ -1,8 +1,8 @@
 {
   "name": "loll",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "REST apps for the lazy developer.",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc --jsx preserve -p tsconfig.json",
     "pretest": "yarn run build",
@@ -29,7 +29,6 @@
   "homepage": "https://github.com/amiller-gh/loll#readme",
   "dependencies": {
     "chalk": "^3.0.0",
-    "node-fetch": "^2.6.0",
     "walk": "^2.3.9"
   },
   "devDependencies": {
@@ -39,6 +38,7 @@
     "@types/walk": "^2.3.0",
     "express": "^4.17.1",
     "mocha": "^6.2.2",
+    "node-fetch": "^2.6.0",
     "typescript": "^3.7.4",
     "watch": "^1.0.2"
   }
