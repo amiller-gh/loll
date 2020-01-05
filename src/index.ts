@@ -46,6 +46,9 @@ const evalAPI = function(func: Express.RequestHandler) {
     try {
       const result = await func(req, res, () => {});
 
+      // If internal API flag is present, just return the result to the internal handler
+      if((req as any)._internalAPI) { return next(result) }
+
       // If they've returned the response object, assume we've sent the result already.
       if (result === res) { return result; }
 
@@ -55,9 +58,8 @@ const evalAPI = function(func: Express.RequestHandler) {
       // Otherwise, we're rather confused... alert the world.
       console.error('✘ API endpoint returned something other than JSON or a Promise:', result, func);
       return res.status(500).json({status: 'error', message: 'Invalid Response'});
-
     } catch(err) {
-      // If internal API flag is present, just return the result to the next handler
+      // If internal API flag is present, just go ahead and throw, it is up to the user to handle the failed promise.
       if((req as any)._internalAPI) throw err;
 
       console.error('✘ API promise rejected and returning non 200 response:', err);
@@ -161,70 +163,45 @@ function discoverAPI(router: Express.Router, apiDir: string){
   }
 }
 
-class ApiQuery {
+async function ApiQuery(router: Express.Router, method: Method, req: Express.Request, res: Express.Response, path: string, body: any): Promise<any> {
 
-  private path: string;
-  private router: Express.Router;
-  private req: Express.RequestHandler;
-  private res: Express.Response;
+  if(typeof path !== 'string') throw new Error('Internal API calls must be provided a path');
 
-  constructor(router: Express.Router, method: Method, req: Express.Request, res: Express.Response, path: string, body: any) {
-    this.router = router;
-    this.path = path;
-    this.req = Object.create(req, {
-      url: { writable: true, configurable: true, value: this.path },
-      method: { writable: true, configurable: true, value: method },
-      ip: { writable: true, configurable: true, value: '127.0.0.1' },
-      body: { writable: true, configurable: true, value: body },
-      query: { writable: true, configurable: true, value: {} },
-      params: { writable: true, configurable: true, value: {} },
-      originalUrl: { writable: true, configurable: true, value: undefined },
-      _internalAPI: { writable: true, configurable: true, value: true}
-    });
-    this.res = res;
-    return this;
-  }
+  const newReq = Object.create(req, {
+    method: { writable: true, configurable: true, value: method },
+    route: { writable: true, configurable: true, value: undefined },
+    url: { writable: true, configurable: true, value: path },
+    originalUrl: { writable: true, configurable: true, value: undefined },
+    ip: { writable: true, configurable: true, value: '127.0.0.1' },
+    body: { writable: true, configurable: true, value: body },
+    query: { writable: true, configurable: true, value: {} },
+    params: { writable: true, configurable: true, value: {} },
+    _internalAPI: { writable: true, configurable: true, value: true}
+  });
 
-  async then(callback: (data: any) => any, errCallback: (err: Error, data: any) => any): Promise<any> {
-
-    if(typeof this.path !== 'string') return console.error('✘ API call must be provided a path!');
-    if(!errCallback) throw 'YOU MUST PROVIDE AN ERROR CALLBACK FOR INTERNAL API CALLS';
-
+  return new Promise((resolve, reject) => {
     // Handle
     try {
       // TODO: The @types/express typescript definitions don't have `Router.handle()`. Add this?
-      await (this.router as any).handle(this.req, this.res, async (result: Promise<any> | any) => {
-
+      (router as any).handle(newReq, res, async (result: any) => {
         try {
-          const data = await result;
-          if(typeof data === 'object') {
-
-            // If the response is an error, call the error callback.
-            if(data && data.status === 'error') {
-              console.error(chalk.bold.red('✘ Internal API promise failed:'), result.message);
-              callback(data);
-            }
-
-            // Otherwise, call the success response.
-            return callback(data);
-          }
-
-          // If the response is not an object, panic.
-          console.error(chalk.bold.red('✘ Internal API returned with invalid response:'), result);
-          return errCallback(new Error('Internal API returned with invalid response'), { status: 'error', message: 'Invalid Response' });
+          const data = result;
+          if(typeof data === 'object') { return resolve(data); }
+          console.error(chalk.bold.red('✘ Internal API returned with invalid response:'), data);
+          reject(new Error('Internal API returned with invalid response'));
         } catch (err) {
           console.error(chalk.bold.red('✘ Internal API promise rejected:'), err);
-          return errCallback(err, { status: 'error', message: 'Server Error' })
+          return reject(err)
         }
       });
     } catch(err) {
       console.error(chalk.bold.red('✘ Internal API promise rejected:'), err);
-      return errCallback(err, { status: 'error', message: 'Server Error' });
+      return reject(err);
     }
-  }
+  });
 }
 
-// Register function must be called at the begining of your app.js file.
+// Register function must be called at the beginning of your app.js file.
 // Creates a new express Router using the parent application's version of express
 // And adds a middleware that attaches a new instance of the api query function
 // to each request's locals object.
@@ -236,16 +213,16 @@ export default function loll(express: any, options: LollOptions = {}) {
   app.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
     res.locals.api = {
       get: function GET_factory(path: string, body: any){
-        return new ApiQuery(router, Method.GET, req, res, path, body);
+        return ApiQuery(router, Method.GET, req, res, path, body);
       },
       post: function POST_factory(path: string, body: any){
-        return new ApiQuery(router, Method.POST, req, res, path, body);
+        return ApiQuery(router, Method.POST, req, res, path, body);
       },
       put: function PUT_factory(path: string, body: any){
-        return new ApiQuery(router, Method.PUT, req, res, path, body);
+        return ApiQuery(router, Method.PUT, req, res, path, body);
       },
       delete: function DELETE_factory(path: string, body: any){
-        return new ApiQuery(router, Method.DELETE, req, res, path, body);
+        return ApiQuery(router, Method.DELETE, req, res, path, body);
       }
     };
     next();
