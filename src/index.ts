@@ -40,7 +40,7 @@ const evalAPI = function(func: Express.RequestHandler) {
   return async function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
 
     // If this is not an XHR request, skip.
-    if(!isXhr(req)) { next(); }
+    if(!isXhr(req)) { return next(); }
 
     // Evaluate API function
     try {
