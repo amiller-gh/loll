@@ -93,7 +93,7 @@ A simple API file may look like this:
 ``` JavaScript
 // This file implements the `GET` HTTP method, which returns a JSON blob. 
 // This JSON is sent back to the client and the response is closed. 
-exports function GET(req, res) {
+export function GET(req, res) {
   return {
     status: 'success',
     data: {
