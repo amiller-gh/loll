@@ -26,22 +26,15 @@ export interface LollOptions {
   root?: string;
 }
 
-const isXhr = (req: Express.Request): boolean => req.xhr || (req.headers.accept || '').includes('json') || req.headers.accept === '*/*';
-
 // If no API endpoint takes the bait, return the properly formatted 400 error
 // for the media requested. JSON for ajax, just the http status code for all others
-function apiNotFound(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-  if(!isXhr(req)) { next(); }
+function apiNotFound(req: Express.Request, res: Express.Response, _next: Express.NextFunction) {
   console.error(chalk.red('✘ Error routing to API path '), chalk.red(req.path));
   return res.status(400).json({ code: 400, status: 'error', message: 'Method Not Implemented' });
 }
 
 const evalAPI = function(func: Express.RequestHandler) {
   return async function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-
-    // If this is not an XHR request, skip.
-    if(!isXhr(req)) { return next(); }
-
     // Evaluate API function
     try {
       const result = await func(req, res, () => {});

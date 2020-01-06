@@ -1,6 +1,6 @@
 {
   "name": "loll",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "REST apps for the lazy developer.",
   "main": "dist/src/index.js",
   "scripts": {
