@@ -258,8 +258,10 @@ export async function PUT(req, res) {
 
 This ability to easily compose internal APIs on the server allows us to do some creative things! Like, consuming our existing APIs to create new ones.
 
-> An API file `/api/profile/:uid.js`. This endpoint returns an entire profile object. So much info!
 ``` JavaScript
+/** /api/profile/:uid.js **/
+
+// This endpoint returns an entire profile object. So much info!
 exports.GET = function(req, res) {
   return { 
     status: 'success', 
@@ -273,8 +275,10 @@ exports.GET = function(req, res) {
 }
 ```
 
-> An API file `/api/miniprofile/:uid.js`. This mini-profile API endpoint will only return the `firstName` and `lastName` properties of the full profile.
 ``` JavaScript
+/** /api/miniprofile/:uid.js **/
+
+// This mini-profile API endpoint will only return the `firstName` and `lastName` properties of the full profile.
 exports.GET = function(req, res) {
   const result = res.locals.api.get('/user/' + req.params.uid);
   return {
