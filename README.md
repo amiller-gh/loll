@@ -262,7 +262,7 @@ This ability to easily compose internal APIs on the server allows us to do some 
 /** /api/profile/:uid.js **/
 
 // This endpoint returns an entire profile object. So much info!
-exports.GET = function(req, res) {
+export function GET(req, res) {
   return { 
     status: 'success', 
     data: { 
@@ -271,7 +271,7 @@ exports.GET = function(req, res) {
       numPkmn: 151,
       hometown: 'Pallet Town'
     }
-  }
+  };
 }
 ```
 
@@ -279,8 +279,8 @@ exports.GET = function(req, res) {
 /** /api/miniprofile/:uid.js **/
 
 // This mini-profile API endpoint will only return the `firstName` and `lastName` properties of the full profile.
-exports.GET = function(req, res) {
-  const result = res.locals.api.get('/user/' + req.params.uid);
+export function GET(req, res) {
+  const result = await res.locals.api.get(`/profile/${req.params.uid}`);
   return {
     status: 'success',
     data: {
