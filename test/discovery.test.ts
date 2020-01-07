@@ -4,13 +4,17 @@ import * as http from 'http';
 import * as path from 'path';
 
 import * as express from 'express';
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 
 import loll from '../src';
 
 const PORT = 3030;
 
-const GET = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'GET' }).then(res => res.json()), obj);
+const GET = async (url: string, obj: any): Promise<Response> => {
+  const res = await fetch(`http://localhost:${PORT}${url}`, { method: 'GET' });
+  assert.deepStrictEqual(await res.json(), obj);
+  return res;
+}
 const POST = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'POST', body }).then(res => res.json()), obj);
 const PUT = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'PUT', body }).then(res => res.json()), obj);
 const DELETE = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'DELETE' }).then(res => res.json()), obj);
@@ -38,6 +42,10 @@ describe('API Discovery', function() {
       await GET('/api', { status: 'success', data: true });
     });
 
+    it('allows custom response codes', async function() {
+      const res = await GET('/api/status', { status: 'error', message: 'Unauthorized.' });
+      assert.strictEqual(res.status, 401);
+    });
 
     it('work with named GET exports', async function() {
       await GET('/api/named', { status: 'success', data: 'get' });

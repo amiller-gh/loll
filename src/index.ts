@@ -46,11 +46,14 @@ const evalAPI = function(ctx: any, func: Express.RequestHandler) {
       // If internal API flag is present, just return the result to the internal handler
       if((req as any)._internalAPI) { return next(result) }
 
-      // If they've returned the response object, assume we've sent the result already.
+      // If the middleware has returned the response object, assume they've sent the result already.
       if (result === res) { return result; }
 
       // If it appears to be a JSON response, send it down.
-      if (typeof result === 'object') { return res.status((result.code || 200)).json(result); }
+      if (typeof result === 'object') {
+        if (!res.statusCode) { res.status(200); }
+        return res.json(result);
+      }
 
       // Otherwise, we're rather confused... alert the world.
       console.error('✘ API endpoint returned something other than JSON or a Promise:', result, func);
@@ -59,8 +62,8 @@ const evalAPI = function(ctx: any, func: Express.RequestHandler) {
       // If internal API flag is present, just go ahead and throw, it is up to the user to handle the failed promise.
       if((req as any)._internalAPI) throw err;
 
-      console.error('✘ API promise rejected and returning non 200 response:', err);
-      return res.status((err.code || 500)).json(err);
+      console.error('✘ API promise rejected, returning non 500 response:', err);
+      return res.status((err.code || 500)).json({ status: 'error', message: err.message });
     }
   }
  };
