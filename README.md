@@ -172,7 +172,7 @@ module.exports = MyEndpoint;
 
 This behavior is especially helpful with ES6 classes, where you can use decorators (experimental, you'll need a preprocessor) to augment your routes' behavior. Because these instances have a unique `this` context, these route endpoints may retain state.
 
-> Reminder: As always with persistent state, Know what you're doing and use at your own risk!
+> Reminder: As always with in-memory persistent state – know what you're doing, and use at your own risk!
 
 ```Typescript
 function basicAuth() { /* Basic HTTP Auth Impl Here */ }
@@ -230,7 +230,7 @@ A server side call may look like this:
 const result = await res.locals.api.get('/user/123');
 ```
 
-> NOte: Server side API calls will **always** return a Promise, regardless of if the defined API handler returns a Promise itself, or just a `**POJO**`.
+> Note: Server side API calls will **always** return a Promise, regardless of if the defined API handler returns a Promise itself, or just a `**POJO**`.
 
 As mentioned above, are able to pass internal API calls an optional JSON object as a second parameter. This object will replace `req.body` on the original request object, but only for the lifetime of the internal API call. Consider:
 
