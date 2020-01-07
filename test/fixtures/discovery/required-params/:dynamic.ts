@@ -1,5 +1,5 @@
 import * as Express from 'express';
 
-export default function dynamicPart(req: Express.Request) {
+export function GET(req: Express.Request) {
   return req.params;
 }

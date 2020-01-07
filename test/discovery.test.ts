@@ -8,10 +8,12 @@ import fetch from 'node-fetch';
 
 import loll from '../src';
 
-const GET = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:3000${url}`, { method: 'GET' }).then(res => res.json()), obj);
-const POST = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:3000${url}`, { method: 'POST', body }).then(res => res.json()), obj);
-const PUT = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:3000${url}`, { method: 'PUT', body }).then(res => res.json()), obj);
-const DELETE = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:3000${url}`, { method: 'DELETE' }).then(res => res.json()), obj);
+const PORT = 3030;
+
+const GET = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'GET' }).then(res => res.json()), obj);
+const POST = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'POST', body }).then(res => res.json()), obj);
+const PUT = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'PUT', body }).then(res => res.json()), obj);
+const DELETE = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'DELETE' }).then(res => res.json()), obj);
 const ERROR_RESPONSE = { code: 400, status: 'error', message: 'Method Not Implemented' };
 
 const app = express();
@@ -21,7 +23,7 @@ const api = loll(express, {
 app.use('/api', api);
 
 // Start Server
-http.createServer(app).listen(3000, function(){
+http.createServer(app).listen(PORT, function(){
   console.log(('Express server listening on port ' + app.get('port')));
 });
 
@@ -29,8 +31,13 @@ describe('API Discovery', function() {
   describe('it should', function() {
 
     it('work with default exports', async function() {
-      await GET('/api', { status: 'success', data: 'ok' });
+      await GET('/api', { status: 'success', data: false });
     });
+
+    it('default export instances retain state', async function() {
+      await GET('/api', { status: 'success', data: true });
+    });
+
 
     it('work with named GET exports', async function() {
       await GET('/api/named', { status: 'success', data: 'get' });

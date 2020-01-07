@@ -44,7 +44,7 @@ Loll takes an optional configuration hash as a second argument that accepts the 
 
 ## How It Works
 
-Its quite simple really – the Loll middleware will attempt to route an xhr or JSON compatible HTTP request to an API endpoint defined by the structure your project's `/api` directory, and send the JSON response back to the client. 
+Its quite simple really – the Loll middleware will attempt to route an xhr or JSON compatible HTTP request to an API endpoint defined by the structure your project's `/api` directory, and send the JSON response back to the client.
  
 **You can start writing powerful, declaritive REST endpoints with just three simple concepts:**
 
@@ -146,23 +146,51 @@ module.ALL = function(req, res) {
 };
 ```
 
-An API file that only exports a single function will default to the `GET` http method:
+If you are using ES6 modules, your named exports will be interperted as expected:
 ``` JavaScript
-// Same as the example above
-module.exports = function(req, res) {
-  return { status: 'success' };
-};
-```
-
-If you are on ES6 modules, a `default` export will also be interperted as a `GET` HTTP method:
-``` JavaScript
-// Same as the example above
-export default function myHandler(req, res) {
+export function GET(req, res) {
   return { status: 'success' };
 }
 
 export function POST(req, res) {
   return { status: 'success' };
+}
+```
+
+
+An API file that *only* exports a single Function or Class will treat that Function or Class as an API interface constructor. The constructor will be passed the express router.
+```JavaScript
+// Old School
+function MyEndpoint(router) { /* ... */ };
+
+MyEndpoint.prototype.GET = function(req, res) {
+  return { status: 'success' };
+}
+
+module.exports = MyEndpoint;
+```
+
+This behavior is especially helpful with ES6 classes, where you can use decorators (experimental, you'll need a preprocessor) to augment your routes' behavior. Because these instances have a unique `this` context, these route endpoints may retain state.
+
+> Reminder: As always with persistent state, Know what you're doing and use at your own risk!
+
+```Typescript
+function basicAuth() { /* Basic HTTP Auth Impl Here */ }
+
+export default class MyEndpoint {
+  private state: any = {};
+
+  // Anyone may GET a process dependent key value pair.
+  GET(req, res){
+    return { status: 'success', data: this.state[req.params.key] };
+  }
+ 
+  // Only authenticated users may set values.
+  @basicAuth POST(req, res){
+    this.state[req.data.key] = req.data.value; 
+    return { status: 'success' };
+  }
+
 }
 ```
 

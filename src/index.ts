@@ -22,6 +22,10 @@ export interface IApiHandler {
   DELETE?: Express.RequestHandler;
 }
 
+export interface IApiConstructor {
+  new(e?: Express.Router): IApiHandler;
+}
+
 export interface LollOptions {
   root?: string;
 }
@@ -33,11 +37,11 @@ function apiNotFound(req: Express.Request, res: Express.Response, _next: Express
   return res.status(400).json({ code: 400, status: 'error', message: 'Method Not Implemented' });
 }
 
-const evalAPI = function(func: Express.RequestHandler) {
+const evalAPI = function(ctx: any, func: Express.RequestHandler) {
   return async function(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
     // Evaluate API function
     try {
-      const result = await func(req, res, () => {});
+      const result = await func.call(ctx, req, res, () => {});
 
       // If internal API flag is present, just return the result to the internal handler
       if((req as any)._internalAPI) { return next(result) }
@@ -61,9 +65,14 @@ const evalAPI = function(func: Express.RequestHandler) {
   }
  };
 
-function getHandler(filePath: string): IApiHandler | Express.RequestHandler {
+ // My own custom "interop default" function. Fancy.
+function getHandler(filePath: string): IApiHandler | IApiConstructor {
   const obj = require(filePath);
   return typeof obj === 'object' && obj.default ? obj.default : obj;
+}
+
+function isApiConstructor(value: any): value is IApiConstructor {
+  return typeof value === 'function';
 }
 
 function hasValidMethod(handler: IApiHandler){
@@ -79,20 +88,18 @@ function hasValidMethod(handler: IApiHandler){
 function loadAPI(router: Express.Router, filePath: string, apiPath: string){
   let methods = '';
   try {
-    const handler = getHandler(filePath);
+    let handler = getHandler(filePath);
 
-    // If handler is a function, register it as a get callback
-    if (typeof handler === 'function') {
-      router.get(apiPath, evalAPI(handler));
-      methods += ' GET'
-    }
+    // If handler is a function, lets assume its a class constructor.
+    if (isApiConstructor(handler)) { handler = new handler(router); }
+
     // If handler is an object with any valid http method, register them
-    else if (hasValidMethod(handler)) {
-      if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler.ALL));
-      if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler.GET));
-      if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler.POST));
-      if(typeof handler.PUT === 'function' && (methods += ' PUT')) router.put(apiPath, evalAPI(handler.PUT));
-      if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler.DELETE));
+    if (hasValidMethod(handler)) {
+      if(typeof handler.ALL === 'function' && (methods += ' ALL')) router.all(apiPath, evalAPI(handler, handler.ALL));
+      if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler, handler.GET));
+      if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler, handler.POST));
+      if(typeof handler.PUT === 'function' && (methods += ' PUT')) router.put(apiPath, evalAPI(handler, handler.PUT));
+      if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler, handler.DELETE));
     }
     // Otherwise, this is an invalid export. Error.
     else {
