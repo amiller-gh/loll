@@ -128,7 +128,7 @@ function discoverAPI(router: Express.Router, apiDir: string){
         listeners: {
           file: function (root: string, fileStats: walk.WalkStats, next: walk.WalkNext) {
             // Ignore hidden files
-            if(fileStats.name[0] === '.' || !~fileStats.name.indexOf('.js')) return next();
+            if(fileStats.name[0] === '.' || fileStats.name[0] === '_' || !fileStats.name.endsWith('.js')) return next();
 
             // Construct both the absolute file path, and public facing API path
             var filePath = path.join(root, fileStats.name),
