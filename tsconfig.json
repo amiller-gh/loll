@@ -13,7 +13,7 @@
     // Compilation Configuration
     "target": "es2015",
     "inlineSources": true,
-    "inlineSourceMap": true,
+    "sourceMap": true,
     "declaration": true,
     "allowSyntheticDefaultImports": true,
 
