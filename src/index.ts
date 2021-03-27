@@ -131,8 +131,17 @@ function discoverAPI(router: Express.Router, apiDir: string){
             if(fileStats.name[0] === '.' || fileStats.name[0] === '_' || !fileStats.name.endsWith('.js')) return next();
 
             // Construct both the absolute file path, and public facing API path
-            var filePath = path.join(root, fileStats.name),
-                apiPath = filePath.replace(apiDir, '').replace(/\/index.js$/, '').replace(/.js$/, '');
+            const filePath = path.join(root, fileStats.name);
+            let apiPath = fileStats.name;
+            if (apiPath.startsWith('(') && apiPath.endsWith(').js')) {
+              apiPath = `:${apiPath.slice(1, -4)}.js`;
+            }
+
+            if (apiPath.startsWith('[') && apiPath.endsWith('].js')) {
+              apiPath = `:${apiPath.slice(1, -4)}?.js`;
+            }
+
+            apiPath = path.join(root, apiPath).replace(apiDir, '').replace(/\/index.js$/, '').replace(/.js$/, '');
 
             // Push them to our queue. This later sorted in order of route precedence.
             queue.push({ apiPath, filePath });

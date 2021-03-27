@@ -27,12 +27,16 @@ const api = loll(express, {
 app.use('/api', api);
 
 // Start Server
-http.createServer(app).listen(PORT, function(){
+const server = http.createServer(app).listen(PORT, function(){
   console.log(('Express server listening on port ' + app.get('port')));
 });
 
 describe('API Discovery', function() {
   describe('it should', function() {
+
+    this.afterAll(() => {
+      server.close();
+    })
 
     it('work with default exports', async function() {
       await GET('/api', { status: 'success', data: false });
@@ -75,6 +79,17 @@ describe('API Discovery', function() {
 
     it('work with named optional params', async function() {
       await GET('/api/optional-params/what', { dynamic: 'what' });
+      await GET('/api/optional-params', {});
+    });
+
+
+    it('work with named required params – windows', async function() {
+      await GET('/api/required-params/win/what', { dynamic: 'what' });
+      await GET('/api/required-params', ERROR_RESPONSE);
+    });
+
+    it('work with named optional params – windows', async function() {
+      await GET('/api/optional-params/win/what', { dynamic: 'what' });
       await GET('/api/optional-params', {});
     });
 

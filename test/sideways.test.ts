@@ -23,12 +23,16 @@ const api = loll(express, {
 app.use('/api', api);
 
 // Start Server
-http.createServer(app).listen(PORT, function(){
+const server = http.createServer(app).listen(PORT, function(){
   console.log(('Express server listening on port ' + app.get('port')));
 });
 
 describe('API Discovery', function() {
   describe('it should', function() {
+
+    this.afterAll(() => {
+      server.close();
+    })
 
     it('works at root', async function() {
       await GET('/api', { status: 'success', data: 'ok' });
