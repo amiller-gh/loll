@@ -84,13 +84,13 @@ describe('API Discovery', function() {
 
 
     it('work with named required params – windows', async function() {
-      await GET('/api/required-params/win/what', { dynamic: 'what' });
-      await GET('/api/required-params', ERROR_RESPONSE);
+      await GET('/api/windows-required/win/what', { required: 'what', path: 'win' });
+      await GET('/api/windows-required', ERROR_RESPONSE);
     });
 
     it('work with named optional params – windows', async function() {
-      await GET('/api/optional-params/win/what', { dynamic: 'what' });
-      await GET('/api/optional-params', {});
+      await GET('/api/windows-optional/win/what', { dynamic: 'what', path: 'win' });
+      await GET('/api/windows-optional/win', { path: 'win' });
     });
 
   });

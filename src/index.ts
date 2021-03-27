@@ -132,16 +132,29 @@ function discoverAPI(router: Express.Router, apiDir: string){
 
             // Construct both the absolute file path, and public facing API path
             const filePath = path.join(root, fileStats.name);
-            let apiPath = fileStats.name;
-            if (apiPath.startsWith('(') && apiPath.endsWith(').js')) {
-              apiPath = `:${apiPath.slice(1, -4)}.js`;
-            }
+            console.log(filePath);
+            let apiPath = path.join(root, fileStats.name).split(path.sep).map((part) => {
+              console.log(part)
+              if (part.startsWith('[') && part.endsWith(']')) {
+                part = `:${part.slice(1, -1)}`;
+              }
 
-            if (apiPath.startsWith('[') && apiPath.endsWith('].js')) {
-              apiPath = `:${apiPath.slice(1, -4)}?.js`;
-            }
+              if (part.startsWith('(') && part.endsWith(')')) {
+                part = `:${part.slice(1, -1)}?`;
+              }
 
-            apiPath = path.join(root, apiPath).replace(apiDir, '').replace(/\/index.js$/, '').replace(/.js$/, '');
+              if (part.startsWith('[') && part.endsWith('].js')) {
+                part = `:${part.slice(1, -4)}.js`;
+              }
+
+              if (part.startsWith('(') && part.endsWith(').js')) {
+                part = `:${part.slice(1, -4)}?.js`;
+              }
+
+              return part;
+            }).join(path.sep);
+            console.log(apiPath);
+            apiPath = apiPath.replace(apiDir, '').replace(/\/index.js$/, '').replace(/.js$/, '');
 
             // Push them to our queue. This later sorted in order of route precedence.
             queue.push({ apiPath, filePath });
