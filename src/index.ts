@@ -1,8 +1,11 @@
 import * as path from 'path';
+import chalk from 'chalk';
+import * as url from 'url';
 
-import * as Express from 'express';
-import * as walk from 'walk';
-import * as chalk from 'chalk';
+import type { Dirent } from 'fs';
+import type Express from 'express';
+
+import walk from './walk.js';
 
 const DEFAULT_API_ROOT = path.join(process.cwd(), 'api');
 
@@ -69,8 +72,8 @@ const evalAPI = function(ctx: any, func: Express.RequestHandler) {
  };
 
  // My own custom "interop default" function. Fancy.
-function getHandler(filePath: string): IApiHandler | IApiConstructor {
-  const obj = require(filePath);
+async function getHandler(filePath: string): Promise<IApiHandler | IApiConstructor> {
+  const obj = await import(url.pathToFileURL(filePath).toString());
   return typeof obj === 'object' && obj.default ? obj.default : obj;
 }
 
@@ -88,10 +91,10 @@ function hasValidMethod(handler: IApiHandler){
       )
 }
 
-function loadAPI(router: Express.Router, filePath: string, apiPath: string){
+async function loadAPI(router: Express.Router, filePath: string, apiPath: string) {
   let methods = '';
   try {
-    let handler = getHandler(filePath);
+    let handler = await getHandler(filePath);
 
     // If handler is a function, lets assume its a class constructor.
     if (isApiConstructor(handler)) { handler = new handler(router); }
@@ -122,63 +125,50 @@ interface QueueItem {
   filePath: string;
 }
 
-function discoverAPI(router: Express.Router, apiDir: string){
-  var queue: QueueItem[] = [],
-      options = {
-        listeners: {
-          file: function (root: string, fileStats: walk.WalkStats, next: walk.WalkNext) {
-            // Ignore hidden files
-            if(fileStats.name[0] === '.' || fileStats.name[0] === '_' || !fileStats.name.endsWith('.js')) return next();
-
-            // Construct both the absolute file path, and public facing API path
-            const filePath = path.join(root, fileStats.name);
-            const apiPath = path.join(root, fileStats.name).split(path.sep).map((part) => {
-              if (part.startsWith('[') && part.endsWith(']')) {
-                part = `:${part.slice(1, -1)}`;
-              }
-
-              if (part.startsWith('(') && part.endsWith(')')) {
-                part = `:${part.slice(1, -1)}?`;
-              }
-
-              if (part.startsWith('[') && part.endsWith('].js')) {
-                part = `:${part.slice(1, -4)}.js`;
-              }
-
-              if (part.startsWith('(') && part.endsWith(').js')) {
-                part = `:${part.slice(1, -4)}?.js`;
-              }
-
-              return part;
-            }).join(path.sep).replace(apiDir, '').replace(/\/index.js$/, '').replace(/.js$/, '');
-
-            // Push them to our queue. This later sorted in order of route precedence.
-            queue.push({ apiPath, filePath });
-
-            // Process next file
-            next();
-          },
-
-          end: function () {
-            // Sort queue in reverse alphabetical order.
-            // Has the nice side effect of ordering by route precedence
-            queue.sort(function(file1, file2){
-              return (file1.apiPath > file2.apiPath) ? 1 : -1;
-            })
-
-            // For each API item in the queue, load it into our router
-            while(queue.length){
-              const file = queue.pop()!; // TODO: When ES6 is common in node, make let
-              loadAPI(router, file.filePath, file.apiPath);
-            }
-
-            // When we have loaded all of our API endpoints, register our catchall route
-            router.all('*', apiNotFound);
-          }
-        }
-      };
+async function discoverAPI(router: Express.Router, apiDir: string){
+  var queue: QueueItem[] = [];
   try{
-    walk.walkSync(apiDir, options);
+    walk(apiDir, (root: string, fileStats: Dirent | Error) => {
+      if (fileStats instanceof Error) { return; }
+      // Ignore hidden files
+      if(fileStats.name[0] === '.' || fileStats.name[0] === '_' || !fileStats.name.endsWith('.js')) return;
+
+      // Construct both the absolute file path, and public facing API path
+      const filePath = path.join(root, fileStats.name);
+      const apiPath = path.join(root, fileStats.name).split(path.sep).map((part) => {
+        if (part.startsWith('[') && part.endsWith(']')) {
+          part = `:${part.slice(1, -1)}`;
+        }
+
+        if (part.startsWith('(') && part.endsWith(')')) {
+          part = `:${part.slice(1, -1)}?`;
+        }
+
+        if (part.startsWith('[') && part.endsWith('].js')) {
+          part = `:${part.slice(1, -4)}.js`;
+        }
+
+        if (part.startsWith('(') && part.endsWith(').js')) {
+          part = `:${part.slice(1, -4)}?.js`;
+        }
+        return part;
+      }).join(path.sep).replace(apiDir, '').replace(/\/index.js$/, '').replace(/.js$/, '');
+      queue.push({ filePath, apiPath });
+    })
+    // Sort queue in reverse alphabetical order.
+    // Has the nice side effect of ordering by route precedence
+    queue.sort(function(file1, file2){
+      return (file1.apiPath > file2.apiPath) ? 1 : -1;
+    })
+
+    // For each API item in the queue, load it into our router
+    while(queue.length){
+      const file = queue.pop()!; // TODO: When ES6 is common in node, make let
+      await loadAPI(router, file.filePath, file.apiPath);
+    }
+
+    // When we have loaded all of our API endpoints, register our catchall route
+    router.all('*', apiNotFound);
   } catch(e){
     console.error(chalk.bold.red('✘ Error reading API directory:  '), e);
   }
@@ -226,7 +216,7 @@ async function ApiQuery(router: Express.Router, method: Method, req: Express.Req
 // Creates a new express Router using the parent application's version of express
 // And adds a middleware that attaches a new instance of the api query function
 // to each request's locals object.
-export default function loll(express: any, options: LollOptions = {}) {
+export default async function loll(express: any, options: LollOptions = {}) {
   const app = express() as Express.Express;
   const router = express.Router() as Express.Router;
 
@@ -250,7 +240,7 @@ export default function loll(express: any, options: LollOptions = {}) {
   });
 
   console.log(chalk.bold.green('• Discovering API:'));
-  discoverAPI(router, options.root || DEFAULT_API_ROOT);
+  await discoverAPI(router, options.root || DEFAULT_API_ROOT);
   app.use(router);
   console.log(chalk.bold.green('✔ API Discovery Complete'));
   return app;

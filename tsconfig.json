@@ -1,17 +1,16 @@
 {
   "include": [ "src/**/*", "test/**/*" ],
   "compilerOptions": {
-
     "outDir": "dist",
     "baseUrl": "dist",
-    "lib": [ "es7", "es2017", "dom" ],
+    "lib": [ "esnext", "dom" ],
 
     // JSX Settings for Preact
     "jsx": "react",
     "jsxFactory": "h",
 
     // Compilation Configuration
-    "target": "es2015",
+    "target": "esnext",
     "inlineSources": true,
     "sourceMap": true,
     "declaration": true,
@@ -40,8 +39,7 @@
     "preserveConstEnums": false,
     "newLine": "LF",
     "traceResolution": false,
-    "module": "commonjs",
-
+    "module": "esnext",
   },
 
   "references": []

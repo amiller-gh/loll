@@ -2,13 +2,13 @@
 import * as assert from 'assert';
 import * as http from 'http';
 import * as path from 'path';
+import express from 'express';
+import { fileURLToPath } from 'url';
 
-import * as express from 'express';
-import fetch, { Response } from 'node-fetch';
-
-import loll from '../src';
+import loll from '../src/index.js';
 
 const PORT = 3030;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const GET = async (url: string, obj: any): Promise<Response> => {
   const res = await fetch(`http://localhost:${PORT}${url}`, { method: 'GET' });
@@ -21,7 +21,7 @@ const DELETE = async (url: string, obj: any) => assert.deepStrictEqual(await fet
 const ERROR_RESPONSE = { code: 400, status: 'error', message: 'Method Not Implemented' };
 
 const app = express();
-const api = loll(express, {
+const api = await loll(express, {
   root: path.join(__dirname, 'fixtures', 'discovery'),
 });
 app.use('/api', api);
