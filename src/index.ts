@@ -14,6 +14,7 @@ const enum Method {
   GET = 'GET',
   POST = 'POST',
   PUT = 'PUT',
+  PATCH = 'PATCH',
   DELETE = 'DELETE',
 }
 
@@ -22,6 +23,7 @@ export interface IApiHandler {
   GET?: Express.RequestHandler;
   POST?: Express.RequestHandler;
   PUT?: Express.RequestHandler;
+  PATCH?: Express.RequestHandler;
   DELETE?: Express.RequestHandler;
 }
 
@@ -54,7 +56,9 @@ const evalAPI = function(ctx: any, func: Express.RequestHandler) {
 
       // If it appears to be a JSON response, send it down.
       if (typeof result === 'object') {
-        if (!res.statusCode) { res.status(200); }
+        if (res.statusCode === 200) {
+          try { res.status(typeof result?.code === 'number' ? result.code : 200); } catch { 1; }
+        }
         return res.json(result);
       }
 
@@ -65,8 +69,11 @@ const evalAPI = function(ctx: any, func: Express.RequestHandler) {
       // If internal API flag is present, just go ahead and throw, it is up to the user to handle the failed promise.
       if((req as any)._internalAPI) throw err;
 
-      console.error('✘ API promise rejected, returning non 500 response:', err);
-      return res.status((err.code || 500)).json({ status: 'error', message: err.message });
+      console.error('✘ API promise rejected, returning non 200 response:', err);
+      let status = 500;
+      typeof err.cause === 'number' && (status = err.cause);
+      typeof err.code === 'number' && (status = err.code);
+      return res.status(status).json({ status: 'error', message: err.message });
     }
   }
  };
@@ -87,6 +94,7 @@ function hasValidMethod(handler: IApiHandler){
         || typeof handler.GET === 'function'
         || typeof handler.POST === 'function'
         || typeof handler.PUT === 'function'
+        || typeof handler.PATCH === 'function'
         || typeof handler.DELETE === 'function'
       )
 }
@@ -105,6 +113,7 @@ async function loadAPI(router: Express.Router, filePath: string, apiPath: string
       if(typeof handler.GET === 'function' && (methods += ' GET')) router.get(apiPath, evalAPI(handler, handler.GET));
       if(typeof handler.POST === 'function' && (methods += ' POST')) router.post(apiPath, evalAPI(handler, handler.POST));
       if(typeof handler.PUT === 'function' && (methods += ' PUT')) router.put(apiPath, evalAPI(handler, handler.PUT));
+      if(typeof handler.PATCH === 'function' && (methods += ' PATCH')) router.patch(apiPath, evalAPI(handler, handler.PATCH));
       if(typeof handler.DELETE === 'function' && (methods += ' DELETE')) router.delete(apiPath, evalAPI(handler, handler.DELETE));
     }
     // Otherwise, this is an invalid export. Error.

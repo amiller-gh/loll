@@ -15,6 +15,7 @@ const GET = async (url: string, obj: any): Promise<Response> => {
   assert.deepStrictEqual(await res.json(), obj);
   return res;
 }
+const PATCH = async (url: string, body: any, obj: any, code?: number) => { const res = await fetch(`http://localhost:${PORT}${url}`, { method: 'PATCH', body }); assert.deepStrictEqual(await res.json(), obj); code && assert.deepStrictEqual(res.status, code); };
 const POST = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'POST', body }).then(res => res.json()), obj);
 const PUT = async (url: string, body: any, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'PUT', body }).then(res => res.json()), obj);
 const DELETE = async (url: string, obj: any) => assert.deepStrictEqual(await fetch(`http://localhost:${PORT}${url}`, { method: 'DELETE' }).then(res => res.json()), obj);
@@ -61,6 +62,10 @@ describe('API Discovery', function() {
 
     it('work with named PUT exports', async function() {
       await PUT('/api/named', {}, { status: 'success', data: 'put' });
+    });
+
+    it('work with named PATCH exports', async function() {
+      await PATCH('/api/named', {}, { status: 'error', message: 'This Always Fails', code: 418 }, 418);
     });
 
     it('work with named DELETE exports', async function() {

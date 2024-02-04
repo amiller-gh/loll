@@ -23,7 +23,6 @@
 
     // Enhance Strictness
     "noImplicitAny": true,
-    "suppressImplicitAnyIndexErrors": true,
     "noUnusedParameters": true,
     "allowUnreachableCode": false,
     "strictNullChecks": true,
